@@ -49,18 +49,39 @@ function checkOdd(n: int): (b: bool) {
 }
 lemma OddModulo(n: int)
   ensures isOdd(n) ==> n % 2 != 0
-{}
+{
+}
+
 lemma ModuloOdd(n: int)
   ensures n % 2 != 0 ==> isOdd(n)
-{ // TODO: complete his proof
+{
+  if n % 2 != 0 {
+    // if not even
+    var k := n / 2;
+    assert n == (2 * k) + 1;
+  }
 }
+
 lemma checkOddCorrect(n: int)
   ensures checkOdd(n) <==> isOdd(n)
-{ // TODO: complete his proof
+{
+  if checkOdd(n) {
+    ModuloOdd(n);
+    assert isOdd(n);
+  }
+  if isOdd(n) {
+    OddModulo(n);
+    assert checkOdd(n);
+  }
 }
+
 lemma OddTimesOdd(n1: int, n2: int)
   ensures isOdd(n1) && isOdd(n2) ==> isOdd(n1 * n2)
-{ // TODO
+{
+  if isOdd(n1) && isOdd(n2) {
+    checkOddCorrect(n1 * n2);
+    assert n1 * n2 % 2 != 0;
+  }
 }
 
 /*** Even & Odd ***/
