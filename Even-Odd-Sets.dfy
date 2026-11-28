@@ -49,18 +49,39 @@ function checkOdd(n: int): (b: bool) {
 }
 lemma OddModulo(n: int)
   ensures isOdd(n) ==> n % 2 != 0
-{}
+{
+}
+
 lemma ModuloOdd(n: int)
   ensures n % 2 != 0 ==> isOdd(n)
-{ // TODO: complete his proof
+{
+  if n % 2 != 0 {
+    // if not even
+    var k := n / 2;
+    assert n == (2 * k) + 1;
+  }
 }
+
 lemma checkOddCorrect(n: int)
   ensures checkOdd(n) <==> isOdd(n)
-{ // TODO: complete his proof
+{
+  if checkOdd(n) {
+    ModuloOdd(n);
+    assert isOdd(n);
+  }
+  if isOdd(n) {
+    OddModulo(n);
+    assert checkOdd(n);
+  }
 }
+
 lemma OddTimesOdd(n1: int, n2: int)
   ensures isOdd(n1) && isOdd(n2) ==> isOdd(n1 * n2)
-{ // TODO
+{
+  if isOdd(n1) && isOdd(n2) {
+    checkOddCorrect(n1 * n2);
+    assert n1 * n2 % 2 != 0;
+  }
 }
 
 /*** Even & Odd ***/
@@ -90,7 +111,7 @@ lemma InvertParityCorrect(n: int)
 
 /* A set is represented as a sequence with no duplicates */
 predicate isSet(s: seq<int>) {
- // TODO: complete this predicate
+ forall i: int, j:int :: 0 <= i < j < |s| ==> s[i] != s[j]
 }
 
 // hint don't use return statements. Set b instead.
@@ -154,10 +175,14 @@ method checkOddSet(s: seq<int>) returns (b: bool)
 
 /* Adds n to a set s, making sure it remains a set */
 method addToSet(s: seq<int>, n: int) returns (b: seq<int>)
-// TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
+// Specify the behavior of this method so that your specification characterizes the allowed outputs,
   // Marks will be awarded for specifying as much as possible all relevant properties of the output.
   // Hint: You don't need to reimplement addToSet as a function to use in your specification.
-{ // TODO: Implement the method
+  ensures forall i :: i in b <==> (i in s || i == n)
+  ensures n in s ==> |b| == |s|
+  ensures n !in s ==> |b| == |s| + 1
+  ensures isSet(s) ==> isSet(b)
+{
   if n in s {
     b := s;
   }
@@ -167,14 +192,24 @@ method addToSet(s: seq<int>, n: int) returns (b: seq<int>)
   return b;
 }
 
+
 /* Unions two sets s1 and s2, returning a new set t */
 method union(s1: seq<int>, s2: seq<int>) returns (t: seq<int>)
 // TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
 // and as many relevant properties of the result as you can.
+ensures forall i :: i in t <==> (i in s1 || i in s2)
+ensures isSet(s1) ==> isSet(t)
+ensures |t| <= |s1| + |s2|
+ensures isSet(s1) ==> |t| >= |s1|
 { // TODO: Implement the method
   var i := 0;
   t := s1;
-  while i < |s2| {
+  while i < |s2| 
+  invariant 0 <= i <= |s2|
+  invariant forall x :: x in t <==> (x in s1 || x in s2[..i])
+  invariant isSet(s1) ==> isSet(t)
+  invariant |s1| <= |t| <= |s1| + i
+  {
     t := addToSet(t, s2[i]);
     i := i + 1;
   }
@@ -184,12 +219,21 @@ method union(s1: seq<int>, s2: seq<int>) returns (t: seq<int>)
 method intersection(s1: seq<int>, s2: seq<int>) returns (t: seq<int>)
 // TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
 // and as many relevant properties of the result as you can.
+ensures forall i :: i in t <==> (i in s1 && i in s2)
+ensures isSet(t)
+ensures |t| <= |s1|
 { // TODO: Implement the method
+  
   var i := 0;
   t := [];
-  while i < |s1| {
+  while i < |s1|
+  invariant 0 <= i <= |s1|
+  invariant forall x :: x in t <==> (x in s1[..i] && x in s2)
+  invariant isSet(t)
+  invariant |t| <= i
+  {
     if s1[i] in s2 {
-      t := t + [s1[i]];
+      t := addToSet(t, s1[i]);
     }
     i := i + 1;
   }
@@ -200,12 +244,20 @@ method intersection(s1: seq<int>, s2: seq<int>) returns (t: seq<int>)
 method difference(s1: seq<int>, s2: seq<int>) returns (t: seq<int>)
 // TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
 // and as many relevant properties of the result as you can.
+ensures isSet(t)
+ensures forall i :: (i in s1 && i !in s2) <==> i in t
+ensures |t| <= |s1|
 { // TODO: Implement the method
   t := [];
   var i := 0;
-  while i < |s1| {
+  while i < |s1| 
+  invariant 0 <= i <= |s1|
+  invariant isSet(t)
+  invariant forall j :: (j in s1[..i] && j !in s2) <==> j in t
+  invariant |t| <= i
+  {
     if s1[i] !in s2 {
-      t := t + [s1[i]];
+      t := addToSet(t, s1[i]);
     }
     i := i + 1;
   }
