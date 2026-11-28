@@ -93,7 +93,13 @@ lemma NotEvenANDOdd(n: int)
 
 lemma EvenOrOdd(n: int)
   ensures isEven(n) || isOdd(n)
-{ // TODO: complete this proof
+{
+  if n % 2 == 0 {
+    ModuloEven(n);
+  }
+  else {
+    ModuloOdd(n);
+  }
 }
 
 function invertParity(n: int): (m: int) {
@@ -103,7 +109,16 @@ function invertParity(n: int): (m: int) {
 lemma InvertParityCorrect(n: int)
   ensures isEven(n) ==> isOdd(invertParity(n))
   ensures isOdd(n) ==> isEven(invertParity(n))
-{ // TODO: complete this proof
+{
+  if isEven(n) {
+    var m :| n == 2 * m;
+    assert invertParity(n) == 2 * m + 1;
+  }
+
+  if isOdd(n) {
+    var m :| n == 2 * m + 1;
+    assert invertParity(n) == 2 * (m + 1);
+  }
 }
 
 
@@ -133,7 +148,7 @@ method checkSet(s: seq<int>) returns (b: bool)
 
 /* An even set is a set where all elements are even */
 ghost predicate isEvenSet(s: seq<int>) {
- // TODO: complete this predicate
+  forall x :: x in s ==> isEven(x)
 }
 
 method checkEvenSet(s: seq<int>) returns (b: bool)
@@ -151,7 +166,7 @@ method checkEvenSet(s: seq<int>) returns (b: bool)
 
 /* An odd set is a set where all elements are odd */
 ghost predicate isOddSet(s: seq<int>) {
-  // TODO: complete this predicate
+  forall x :: x in s ==> isOdd(x)
 }
 
 method checkOddSet(s: seq<int>) returns (b: bool)
@@ -266,22 +281,92 @@ ensures |t| <= |s1|
 
 /* Multiplies each element of a set s by n, returning a new set t */
 method setScale(s: seq<int>, n: int) returns (t: seq<int>)
-// TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
-// and as many relevant properties of the result as you can.
-{ // TODO: Implement the method
+requires isSet(s)
+// Every element of s times n is in t
+ensures forall x :: x in s ==> x * n in t
+// Every element of t is an element of s times n
+ensures forall y :: y in t ==> exists x :: x in s && y == x * n
+ensures isSet(t)
+// if n == 0 then t={0}
+ensures n == 0 && |s| > 0 ==> t == [0]
+// Multiplying by n != 0 is injective
+ensures n != 0 ==> |t| == |s|
+ensures isEven(n) ==> isEvenSet(t)
+ensures isEvenSet(s) ==> isEvenSet(t)
+ensures isOdd(n) && isOddSet(s) ==> isOddSet(t)
+{
+  t := [];
+  var i := 0;
+
+  while i < |s|
+    invariant 0 <= i <= |s|
+    invariant isSet(t)
+    invariant forall x :: x in s[..i] ==> x * n in t
+    invariant forall y :: y in t ==> exists x :: x in s[..i] && y == x * n
+  {
+    t := addToSet(t, s[i] * n);
+    i := i + 1;
+  }
 }
 
 /* Computes the product set of two sets s1 and s2, returning a new set t = { n * m | n in s1, m in s2 }  */
 method setProduct(s1: seq<int>, s2: seq<int>) returns (t: seq<int>)
-// TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
-// and as many relevant properties of the result as you can.
-{ // TODO: Implement the method
+requires isSet(s1) && isSet(s2)
+// Every product x*y s.t. x in s1 and y in s2 is in t
+ensures forall x, y :: x in s1 && y in s2 ==> x * y in t
+// Every element of t is a product x*y
+ensures forall z :: z in t ==> exists x, y :: x in s1 && y in s2 && z == x * y
+ensures isSet(t)
+// At most one element per pair
+ensures |t| <= |s1| * |s2|
+ensures |s1| == 0 || |s2| == 0 ==> |t| == 0
+ensures isEvenSet(s1) || isEvenSet(s2) ==> isEvenSet(t)
+ensures isOddSet(s1) && isOddSet(s2) ==> isOddSet(t)
+{
+  t := [];
+  var i := 0;
+
+  while i < |s1|
+    invariant 0 <= i <= |s1|
+    invariant isSet(t)
+  {
+    var j := 0;
+
+    while j < |s2|
+      invariant 0 <= j <= |s2|
+      invariant isSet(t)
+    {
+      t := addToSet(t, s1[i] * s2[j]);
+      j := j + 1;
+    }
+    i := i + 1;
+  }
 }
 
 /* Converts an even set to an odd set by inverting the parity of each element  
    Hint: Use the invertParity function */
 method invertParitySet(s: seq<int>) returns (t:seq<int>)
-// TODO: Specify the behavior of this method so that your specification characterizes the allowed outputs,
-// and as many relevant properties of the result as you can.
-{ // TODO: Implement the method
+requires isSet(s)
+// Every element of s inverted is in t
+ensures forall x :: x in s ==> invertParity(x) in t
+// Every element of t is an inverted element of s
+ensures forall y :: y in t ==> exists x :: x in s && y == invertParity(x)
+ensures isSet(t)
+// x + 1 is injective
+ensures |t| == |s|
+ensures isEvenSet(s) ==> isOddSet(t)
+ensures isOddSet(s) ==> isEvenSet(t)
+{
+  t := [];
+  var i := 0;
+
+  while i < |s|
+    invariant 0 <= i <= |s|
+    invariant isSet(t)
+    invariant forall x :: x in s[..i] ==> invertParity(x) in t
+    invariant forall y :: y in t ==> exists x :: x in s[..i] && y == invertParity(x)
+  {
+    t := addToSet(t, invertParity(s[i]));
+    i := i + 1;
+  }
 }
